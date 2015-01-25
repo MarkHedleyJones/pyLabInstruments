@@ -208,7 +208,7 @@ class tek2024:
             self.write("ACQuire:NUMAVg " + str(0))
             self.numAvg = 0
         else:
-            print("Number of avearages must be in "
+            print("Number of averages must be in "
                   + str(self.available_averageSettings))
             sys.exit()
 
@@ -216,7 +216,7 @@ class tek2024:
         """ Enables or disables autoranging for the device
 
         Arguments:
-        mode = False | 'vertial' | 'horizontal' | 'both'
+        mode = False | 'vertical' | 'horizontal' | 'both'
         the autoRanging mode with False being Disabled
         """
 
@@ -237,11 +237,11 @@ class tek2024:
         self.wait()
 
     def acquisition(self, enable):
-        """ Sets acquision parameter.
+        """ Sets acquisition parameter.
         Toggling this controls whether the scope acquires a waveform
 
         Arguments:
-        enable [bool] Toggles waveform acquision
+        enable [bool] Toggles waveform acquisition
         """
         if enable:
             self.issueCommand("ACQuire:STATE ON", "Starting waveform acquisition")
@@ -266,7 +266,7 @@ class tek2024:
         """
         until = 0
         if num == False and self.numAvg == False:
-            print "Waiting for a single aquisition to finish"
+            print "Waiting for a single acquisition to finish"
             until = 1
         elif num != False:
             until = num
@@ -287,7 +287,7 @@ class tek2024:
                    tdiv=False,
                    frequency=False,
                    cycles=False):
-        """ Set the horizontal scale according to the given parametrs.
+        """ Set the horizontal scale according to the given parameters.
         Parameters:
            tdiv [float] A time division in seconds (1/10 of the width of the display)
            frequency [float] Select a timebase that will capture '# cycles' of this
@@ -520,7 +520,7 @@ class channel(tek2024):
         self.y_mult = setVdiv
 
     def did_clip(self, debug=False):
-        """ Checks to see if the last acquisition contained clipped datapoints.
+        """ Checks to see if the last acquisition contained clipped data points.
         This would indicate that the V/div is set too high.
         """
         count = 0
@@ -628,14 +628,16 @@ class channel(tek2024):
                            start=0,
                            stop=2500,
                            width=1):
-        """ Sets waveform parameters for the waveform specified by the channel parameter
+        """ Sets waveform parameters for the waveform specified by the channel
+        parameter.
+
         Arguments:
            channel [int - 1-4] - specifies which channel to configure
            encoding (optional: 'ASCII') [str - {'ASCII' , 'Binary'}] - how the
            waveform is to be transferred (ascii is easiest but slowest)
            start (optional: 0) [int - 0-2499] - data point to begin transfer from
            stop (optional: 2500) [int - 1-2500] - data point to stop transferring at
-           width (optional: 2) [int] - how many bytes per datapoint to transfer
+           width (optional: 2) [int] - how many bytes per data point to transfer.
         """
         self.issueCommand("DATA:SOUrce CH" + str(self.channel),
                           "Setting data source to channel " + str(self.channel),
@@ -708,7 +710,7 @@ class channel(tek2024):
         if y_mult == False:
             print
             print "======================================================"
-            print "WARNING: Y-multiplyer parameter was not returned by scope"
+            print "WARNING: Y-multiplier parameter was not returned by scope"
             print "======================================================"
             print
         if x_incr == False:
@@ -720,7 +722,7 @@ class channel(tek2024):
         if y_zero == False:
             y_zero = 0
 
-        print "Requsting waveform"
+        print "Requesting waveform"
         self.write("CURVE?")
         out = ''
         tmp = self.read()
