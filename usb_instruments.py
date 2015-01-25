@@ -51,22 +51,38 @@ class agilent33220A:
         print "Connected to: " + self.name.rstrip('\n')
 
     def write(self, command):
-        # Send an arbitrary command directly to the scope
+        """ Send an arbitrary command directly to the scope
+        """
         self.meas.write(command)
 
     def read(self, command):
-        # Read an arbitrary amount of data directly from the scope
+        """ Read an arbitrary amount of data directly from the scope
+        """
         return self.meas.read(command)
 
     def reset(self):
-        # Reset the instrument
+        """ Reset the instrument
+        """
         self.meas.sendReset()
 
     def frequency(self, freq):
+        """ Sets the output frequency to the given value
+        """
         self.meas.write("FREQ %f" % freq)
         self._frequency = freq
 
     def mode(self, mode):
+        """ Selects the output mode
+        Possible values are:
+            sine     -> Sine wave
+            square   -> Square wave
+            ramp     -> Triangle/saw-tooth wave
+            triangle -> Alias of ramp
+            pulse    -> Pulse output
+            noise    -> White noise
+            dc       -> DC voltage
+            user     -> Arbitrary waveforms
+        """
         if mode.find('sin') != -1:
             self.meas.write("FUNC SIN")
         elif mode.find('squ') != -1:
@@ -88,15 +104,23 @@ class agilent33220A:
             sys.exit()
 
     def voltage(self, amplitude=None):
+        """ Sets the output voltage of the device.
+        NOTE: The device expects to be driving into a 50 Ohm load so.
+        If driving loads of higher impedance you will get more voltage.
+        """
         if amplitude is not None:
             self.meas.write("VOLT %f" % amplitude)
             self.amplitude = amplitude
         return self.amplitude
 
     def offset(self, offset):
+        """ Sets the amount of DC offset to apply to the output.
+        """
         self.meas.write("VOLT:OFFS %f" % offset)
 
     def units(self, unit):
+        """ Sets the unit to be used when setting the output voltage.
+        """
         if unit.find('pp') != -1:
             self.meas.write("VOLT:UNIT VPP")
         elif unit.find('rms') != -1:
@@ -105,6 +129,9 @@ class agilent33220A:
             self.meas.write("VOLT:UNIT DBM")
 
     def loadImpedance(self, impedance):
+        """ Sets the load impedance the device expects to be driving.
+        This allows the output to be accurately set.
+        """
         if type(impedance):
             self.meas.write("OUTP:LOAD %s" % impedance)
         elif impedance.find('inf') != -1:
@@ -118,6 +145,8 @@ class agilent33220A:
             sys.exit()
 
     def dutyCycle(self, duty):
+        """ Sets the ratio of on time to off time for square waves.
+        """
         if self._frequency > 10000000:
             if duty >= 40 and duty <= 60:
                 self.meas.write("FUNC:SQU:DCYC %f" % duty)
@@ -136,6 +165,8 @@ class agilent33220A:
                 sys.exit()
 
     def output(self, enable):
+        """ Enables or disables the output.
+        """
         if enable:
             self.meas.write("OUTP ON")
         else:

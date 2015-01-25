@@ -4,7 +4,9 @@ from struct import unpack
 import copy
 
 class serialInstrument:
-
+    """ The base class for a serial instrument.
+    Extend this class to implement other instruments with a serial interface.
+    """
     prevCommand = ''
     debug = False
 
@@ -40,13 +42,18 @@ class serialInstrument:
             tmp = self.read()
 
     def write(self, command):
-        self.inst.write(command + "\n");
+        """ Writes a command to the instrument.
+        """
+        self.inst.write(command + "\n")
         if self.debug:
             print command
         if command != self.prevCommand:
             self.prevCommand = command
 
     def read(self):
+        """ Reads a response from the instrument.
+        This function will block until the instrument responds.
+        """
         out = ""
         tmp = self.inst.readlines(9999)
         if self.debug:
@@ -65,6 +72,8 @@ class serialInstrument:
 
 
     def ask(self, command):
+        """ Writes a command to the instrument and reads the response.
+        """
         self.write(command + "\n")
         tmp = self.read()
         while tmp == False:
@@ -72,14 +81,24 @@ class serialInstrument:
         return tmp
 
     def getName(self):
+        """ Returns the instruments identifier string.
+        This is a fairly universal command so should work on most devices.
+        """
         return self.ask("*IDN?")
 
     def sendReset(self):
+        """ Resets the instrument.
+        This is a fairly universal command so should work on most devices.
+        """
         print "Resetting machine"
         self.inst.write("*RST")
 
 
 class tek2024:
+    """ The class for the Tektronix TPS2024 oscilloscope
+    This class is responsible for any functionality not specific to a
+    particular channel, e.g. horizontal scale adjustment.
+    """
 
     x_incr = False
     x_num = False
@@ -127,22 +146,13 @@ class tek2024:
         self.name = self.inst.getName()
         self.debug = debug
         if self.name == False:
-            print "Shit! The machine on " + device + " isn't responding"
+            print "Uh Oh! The machine on " + device + " isn't responding"
             sys.exit()
         else:
             print "Connected to: " + self.name.rstrip('\n')
 
-
     def status(self):
         return self.inst.ask("STB?")
-
-
-    def error(self, message):
-        print
-        print "==========================================="
-        print message
-        print "==========================================="
-        print
 
     def wait(self):
         self.write("*OPC?")
@@ -151,52 +161,40 @@ class tek2024:
             print "Waiting..." + str(tmp)
             tmp = self.read()
 
-
     def checkComplete(self):
         tmp = self.inst.ask("*OPC?")
         while tmp != "1":
             tmp = self.inst.read()
 
-
     def write(self, command):
         # Send an arbitrary command directly to the scope
         self.inst.write(command)
 
-
     def read(self):
         return self.inst.read()
 
-
     def ask(self, command):
         return self.inst.ask(command)
-
 
     def reset(self):
         # Reset the instrument
         self.inst.sendReset()
 
-
     def issueCommand(self, command, feedback, wait=True):
-#         print feedback
         self.inst.write(command)
         if wait == True:
             self.checkComplete()
-        # print "Success."
-
 
     def set_tScale(self, s):
-        self.issueCommand("HORIZONTAL:DELAY:SCALE " + str(s), "Setting timebase to " + str(s) + " s/div")
+        self.issueCommand("HORIZONTAL:DELAY:SCALE " + str(s),
+                          "Setting timebase to " + str(s) + " s/div")
 
-
-    #===========================================================================
-    # Sets or disables averaging (applies to all channels). Valid number of
-    # averages are either 4,16,64 or 128. A value of 0 or False disables
-    # averaging
-    #
-    # Arguments:
-    #    averages [False | int - {4,16,64,128}]
-    #===========================================================================
     def set_averaging(self, averages):
+        """ Sets or disables averaging (applies to all channels).
+        Valid number of averages are either 4,16,64 or 128.
+        A value of 0 or False disables averaging
+        """
+
         if averages in self.available_averageSettings:
             if self.debug:
                 print "Setting averaging to " + str(averages) + " samples"
@@ -214,33 +212,33 @@ class tek2024:
                   + str(self.available_averageSettings))
             sys.exit()
 
-
     def set_autoRange(self, mode):
-        """
-            Enables or disables autoranging for the device
+        """ Enables or disables autoranging for the device
 
-            Arguments:
-            mode = False | 'vertial' | 'horizontal' | 'both'
-            the autoRanging mode with False being Disabled
+        Arguments:
+        mode = False | 'vertial' | 'horizontal' | 'both'
+        the autoRanging mode with False being Disabled
         """
+
         if mode == False:
             self.issueCommand("AUTORange:STATE OFF", "Disabling auto ranging")
         elif mode.find("or") != -1:
-            self.issueCommand("AUTORANGE:SETTINGS HORizontal", "Setting auto range mode to horizontal")
+            self.issueCommand("AUTORANGE:SETTINGS HORizontal",
+                              "Setting auto range mode to horizontal")
             self.issueCommand("AUTORange:STATE ON", "Enabling auto ranging")
         elif mode.find("er") != -1:
-            self.issueCommand("AUTORANGE:SETTINGS VERTICAL", "Setting auto range mode to vertical")
+            self.issueCommand("AUTORANGE:SETTINGS VERTICAL",
+                              "Setting auto range mode to vertical")
             self.issueCommand("AUTORange:STATE ON", "Enabling auto ranging")
         elif mode.find("th") != -1:
-            self.issueCommand("AUTORANGE:SETTINGS BOTH", "Setting auto range mode to both")
+            self.issueCommand("AUTORANGE:SETTINGS BOTH",
+                              "Setting auto range mode to both")
             self.issueCommand("AUTORange:STATE ON", "Enabling auto ranging")
         self.wait()
 
-
     def acquisition(self, enable):
-        """
-        Sets acquision parameter. Toggling this controls whether the scope acquires
-        a waveform
+        """ Sets acquision parameter.
+        Toggling this controls whether the scope acquires a waveform
 
         Arguments:
         enable [bool] Toggles waveform acquision
@@ -250,10 +248,8 @@ class tek2024:
         else:
             self.issueCommand("ACQuire:STATE OFF", "Stopping waveform acquisition")
 
-
     def get_numAcquisitions(self):
-        """
-        Indicates the number of acquisitions that have taken place since
+        """ Indicates the number of acquisitions that have taken place since
         starting oscilloscope acquisition. The maximum number of acquisitions
         that can be counted is 231-1. This value is reset to zero when you
         change most Acquisition, Horizontal, Vertical, or Trigger arguments
@@ -262,23 +258,14 @@ class tek2024:
         num = self.ask("ACQuire:NUMACq?")
         while num == False:
             num = self.read()
-        try:
-            num = num.split(' ')[1]
-            return int(num)
-        except IndexError:
-            print "Uh oh, result was: " + str(num)
-            return self.get_numAcquisitions()
-
+        return int(num)
 
     def waitForAcquisitions(self, num=False):
-        """
-        Waits in a loop until the scope has captured the required number of
+        """ Waits in a loop until the scope has captured the required number of
         acquisitions
         """
         until = 0
-#         print "Number of averages " + str(self.numAvg)
         if num == False and self.numAvg == False:
-            # self.error("No number of acquisitions specified to wait")
             print "Waiting for a single aquisition to finish"
             until = 1
         elif num != False:
@@ -296,20 +283,18 @@ class tek2024:
             done = self.get_numAcquisitions()
             time.sleep(0.1)
 
-
     def set_hScale(self,
                    tdiv=False,
                    frequency=False,
                    cycles=False):
-        """
-        Set the horizontal scale according to the given parametrs.
+        """ Set the horizontal scale according to the given parametrs.
         Parameters:
            tdiv [float] A time division in seconds (1/10 of the width of the display)
            frequency [float] Select a timebase that will capture '# cycles' of this
                              frequency
            cycles [float] Minimum number of frequency cycles to set timebase for
            used in conjunction with 'frequency' parameter
-       """
+        """
         if tdiv != False:
             set_div = False
             for a_tdiv in self.available_tdivs:
@@ -337,9 +322,11 @@ class tek2024:
             print
         return set_div * 10.0
 
-
     def get_timeToCapture(self, frequency, cycles, averaging=1):
-
+        """ Calculates and returns the time (in seconds) for a capture
+        to complete based on the given frequency, cycles, and number
+        of averages.
+        """
         if averaging == 0:
             averaging = 1
 
@@ -356,7 +343,6 @@ class tek2024:
         time_max = (windowlength * averaging) + (wavelength * averaging)
         return (time_min, time_max)
 
-
     def get_transferTime(self, mode):
         if mode == 'ASCII':
             return 8.43393707275
@@ -365,9 +351,10 @@ class tek2024:
         else:
             print "Error getting transfer time"
 
-
     def find_minTdiv(self, frequency, min_cycles=2):
-        # list of available time divisions on the scope
+        """ Finds the minimum s/div that will allow a given number of
+        cycles at a particular frequency to fit in a capture
+        """
         tmp = copy.copy(self.available_tdivs)
         tmp.reverse()
         wavelength = 1.0 / float(frequency)
@@ -387,8 +374,101 @@ class tek2024:
         return tmp[len(tmp) - 1]
 
 
-class channel(tek2024):
+def get_channels_autoRange(channels, wait=True, averages=False, max_adjustments=5):
+    """ Helper function to control the adjustment of multiple channels between
+    captures.
+    This reduces the amount of time spend adjusting the V/div when multiple
+    channels are used as only one re-acquisition is required between adjustments.
+    """
+    channels_data = [False for x in range(len(channels))]
+    channels_rescale = [False for x in range(len(channels))]
+    reset = False
+    to_wait = wait
+    for channel_number, channel in enumerate(channels):
+        xs, ys = channel.get_waveform(False, wait=to_wait)
+        to_wait = False
+        if channel.did_clip():
+            # Increase V/div until no clipped data
+            set_vdiv = channel.get_yScale()
 
+            if channel.available_vdivs.index(set_vdiv) > 0:
+                temp_index = channel.available_vdivs.index(set_vdiv) - 1
+                temp1 = channel.available_vdivs[temp_index]
+                temp2 = 'Decreasing channel '+str(channel_number)+' to '
+                temp2 += str(temp1)
+                temp2 += ' V/div'
+                print(temp2)
+                channels_rescale[channel_number] = temp1
+                reset = True
+            else:
+                print()
+                print('===================================================')
+                print('WARN: Scope Y-scale maxed out! THIS IS BAD!!!!!!!!!')
+                print('===================================================')
+                print('Aborting!')
+                sys.exit()
+        else:
+            tmp_max = 0
+            tmp_min = 0
+            for y in ys:
+                if y > tmp_max:
+                    tmp_max = y
+                elif y < tmp_min:
+                    tmp_min = y
+            datarange = tmp_max - tmp_min
+
+            set_range = channel.get_yScale()
+            set_window = set_range * 8.0
+
+            # find the best (minimum no-clip) range
+            best_window = 0
+            tmp_range = copy.copy(channel.available_vdivs)
+            available_windows = map(lambda x: x * 8.0, tmp_range)
+
+            for available_window in available_windows:
+                if datarange <= (available_window * 0.95):
+                    best_window = available_window
+
+            # if it's not the range were already using, set it
+            if best_window < set_window:
+                temp = 'Increasing channel ' + str(channel_number)
+                temp += ' to ' + str(best_window / 8.0) + ' V/div'
+                print(temp)
+                channels_rescale[channel_number] = best_window / 8.0
+                reset = True
+
+        channels_data[channel_number] = (xs, ys)
+
+    if max_adjustments > 0 and reset:
+        max_adjustments -= 1
+        temp = 'A channels range has been altered, data will need to be'
+        temp += ' re-acquired'
+        print(temp)
+        temp = 'The maximum remaining adjustments to the channels is '
+        temp += str(max_adjustments)
+        print(temp)
+        enumerated_data = enumerate(zip(channels_rescale, channels))
+        for channel_number, (channel_scale, channel) in enumerated_data:
+            if channel_scale != False:
+                temp = 'Adjusting channel ' + str(channel_number) + ' to '
+                temp += str(channel_scale) + ' V/div'
+                print(temp)
+                channel.set_vScale(channel_scale)
+        channels[0].set_averaging(False)
+        time.sleep(1)
+        channels[0].set_averaging(averages)
+        return get_channels_autoRange(channels,
+                                      wait,
+                                      averages,
+                                      max_adjustments=max_adjustments)
+    else:
+        return channels_data
+
+
+class channel(tek2024):
+    """ Channel class that implements the functionality related to one of
+    the oscilloscope's physical channels.
+    """
     channel = False  # Channel num
     y_offset = False
     y_mult = False
@@ -411,16 +491,9 @@ class channel(tek2024):
         self.inst = inst
         self.channel = channel
 
-    def ask_properly(self, command):
-        self.write(command)
-        tmp = self.read()
-        print tmp
-        while tmp == False:
-            tmp = self.read()
-            print tmp
-        return tmp
-
     def set_vScale(self, s, debug=False):
+        """ Sets the V/div setting (vertical scale) for this channel
+        """
         tmp = copy.copy(self.available_vdivs)
         if debug:
             print 'asked to set vdiv to ' + str(s)
@@ -447,24 +520,32 @@ class channel(tek2024):
         self.y_mult = setVdiv
 
     def did_clip(self, debug=False):
-        # Two points in a row must be above or below the threshold values
-        # print self.curve_raw
-        for i in range(len(self.curve_raw) - 2):
-            sum = self.curve_raw[i] + self.curve_raw[i + 1]
-            # print sum
-            if sum < 10 or sum > 500:
+        """ Checks to see if the last acquisition contained clipped datapoints.
+        This would indicate that the V/div is set too high.
+        """
+        count = 0
+        for point in self.curve_raw:
+            if point > 250 or point < 5:
+                count += 1
+            else:
+                count = 0
+
+            if count > 1:
                 return True
         return False
 
     def get_yScale(self):
+        """ Ask the instrument for this channels V/div setting.
+        """
         tmp = self.ask('CH' + str(self.channel) + ':SCAle?')
-        tmp = tmp.split(' ')
-        return float(tmp[1])
+        return float(tmp)
 
-    #==========================================================================
-    # Tries to set the vertical scale appropriatly and returns data
-    #==========================================================================
-    def get_waveform_autoRange(self, debug=False, wait=True):
+    def get_waveform_autoRange(self, debug=False, wait=True, averages=False):
+        """ Download a waveform, checking to see whether the V/div for this
+        channel has been set too high or too low.
+        This function will automatically adjust the V/div for this channel and
+        keep re-requesting captures until the data fits correctly
+        """
         xs, ys = self.get_waveform(False, wait=wait)
         # Check if this waveform contained clipped data
         if self.did_clip():
@@ -475,12 +556,14 @@ class channel(tek2024):
                 if debug:
                     print 'set_vdiv = ' + str(set_vdiv)
                 if self.available_vdivs.index(set_vdiv) > 0:
+                    best_div = self.available_vdivs[self.available_vdivs.index(set_vdiv) - 1]
                     if debug:
-                        print('Setting Y-scale on channel '
-                              + str(self.channel) + ' to '
-                              + str(self.available_vdivs[self.available_vdivs.index(set_vdiv) - 1])
-                              + ' V/div')
-                    self.set_vScale(self.available_vdivs[self.available_vdivs.index(set_vdiv) - 1])
+                        temp = 'Setting Y-scale on channel '
+                        temp += str(self.channel) + ' to '
+                        temp += str(best_div)
+                        temp += ' V/div'
+
+                    self.set_vScale(best_div)
                     self.waitForAcquisitions(self.numAvg)
                     xs, ys = self.get_waveform(debug=False)
                     clipped = self.did_clip()
@@ -522,65 +605,73 @@ class channel(tek2024):
                 if debug:
                     print 'Setting new range' + str(best_window / 8.0)
                 self.set_vScale(best_window / 8.0)
-                avgTmp = self.numAvg
+                print('Disabling averaging')
                 self.set_averaging(False)
                 time.sleep(1)
-                self.set_averaging(avgTmp)
+                print('Enabling averaging, setting to ' + str(averages))
+                self.set_averaging(averages)
                 time.sleep(1)
-                return self.get_waveform_autoRange()
+                return self.get_waveform_autoRange(averages=averages)
         return [xs, ys]
 
     def set_measurementChannel(self):
-        self.issueCommand("MEASUrement:IMMed:SOUrce " + str(self.channel), "Setting immediate measurement source channel to CH" + str(self.channel))
+        temp = "Setting immediate measurement source channel to CH" + str(self.channel)
+        self.issueCommand("MEASUrement:IMMed:SOUrce " + str(self.channel),
+                          temp)
 
     def get_measurement(self):
         self.inst.write("MEASUrement:IMMed:VALue")
         self.inst.read()
 
-    #===========================================================================
-    # Sets waveform parameters for the waveform specified by the channel parameter
-    # Arguments:
-    #    channel [int - 1-4] - specifies which channel to configure
-    #    encoding (optional: 'ASCII') [str - {'ASCII' , 'Binary'}] - how the waveform is to be transferred (ascii is easiest but slowest)
-    #    start (optional: 0) [int - 0-2499] - data point to begin transfer from
-    #    stop (optional: 2500) [int - 1-2500] - data point to stop transferring at
-    #    width (optional: 2) [int] - how many bytes per datapoint to transfer
-    #===========================================================================
     def set_waveformParams(self,
                            encoding='RPBinary',
                            start=0,
                            stop=2500,
                            width=1):
-        self.issueCommand("DATA:SOUrce CH" + str(self.channel), "Setting data source to channel " + str(self.channel), False)
+        """ Sets waveform parameters for the waveform specified by the channel parameter
+        Arguments:
+           channel [int - 1-4] - specifies which channel to configure
+           encoding (optional: 'ASCII') [str - {'ASCII' , 'Binary'}] - how the
+           waveform is to be transferred (ascii is easiest but slowest)
+           start (optional: 0) [int - 0-2499] - data point to begin transfer from
+           stop (optional: 2500) [int - 1-2500] - data point to stop transferring at
+           width (optional: 2) [int] - how many bytes per datapoint to transfer
+        """
+        self.issueCommand("DATA:SOUrce CH" + str(self.channel),
+                          "Setting data source to channel " + str(self.channel),
+                          False)
         if encoding == 'ASCII':
-            self.issueCommand("DATA:ENCdg ASCIi", "Setting data encoding to ASCII", False)
+            self.issueCommand("DATA:ENCdg ASCIi",
+                              "Setting data encoding to ASCII", False)
             self.encoding = 'ASCII'
         else:
-            self.issueCommand("DATA:ENCdg RPBinary", "Setting data encoding to RPBinary", False)
+            self.issueCommand("DATA:ENCdg RPBinary",
+                              "Setting data encoding to RPBinary", False)
             self.encoding = 'RPBinary'
-        # self.issueCommand("DATA:ENCdg RIBinary","Setting data encoding to RIBinary") #I dont know how to convert this data stream from binary into int
-        self.issueCommand("DATA:STARt " + str(start), "Setting start data point to " + str(start), False)
-        self.issueCommand("DATA:STOP " + str(stop), "Setting stop data point to " + str(stop), False)
-        self.issueCommand("DATA:WIDTH " + str(width), "Setting of bytes to transfer per waveform point to " + str(width), False)
+        self.issueCommand("DATA:STARt " + str(start),
+                          "Setting start data point to " + str(start), False)
+        self.issueCommand("DATA:STOP " + str(stop),
+                          "Setting stop data point to " + str(stop), False)
+        self.issueCommand("DATA:WIDTH " + str(width),
+                          "Setting of bytes to transfer per waveform point to " + str(width),
+                          False)
         self.checkComplete()
-
 
     def get_transferTime(self):
         return self.inst.get_transferTime(self.encoding)
 
-
-    #===========================================================================
-    # Waits until all pending operations have finished and the correct number
-    # of aquisitions have occurred (if averaging) and downloads the waveform.
-    # This method will download waveform setup information and construct the
-    # x and y data fields
-    #===========================================================================
     def get_waveform(self, debug=False, wait=True):
-
+        """ Downloads this channels waveform data.
+        This function will not make any adjustments to the V/div settings.
+        If the parameter 'wait' is set to false, the most recent waveform will be
+        captured. Otherwise the scope will wait for the next data acquisition
+        to complete before downloading waveform data.
+        """
         if wait:
             self.waitForAcquisitions()
 
-        self.issueCommand("DATA:SOUrce CH" + str(self.channel), "Setting data source to channel " + str(self.channel))
+        self.issueCommand("DATA:SOUrce CH" + str(self.channel),
+                          "Setting data source to channel " + str(self.channel))
         if debug:
             print "Requesting waveform setup information"
 
@@ -598,57 +689,15 @@ class channel(tek2024):
         x_num = False
 
         out = out.split(';')
-        for line in out:
-            tmp = line.split(' ')
-            if tmp[0] == ':WFMPRE:BYT_NR':
-                if debug:
-                    print 'Bytes per point: ' + tmp[1]
-            elif tmp[0] == 'BIT_NR':
-                if debug:
-                    print 'Bits per point: ' + tmp[1]
-            elif tmp[0] == 'ENCDG':
-                if tmp[1] == 'ASC':
-                    if debug:
-                        print 'Data encoding: ASCII'
-                    encoding = 'ascii'
-                elif tmp[1] == 'BIN':
-                    if debug:
-                        print 'Data encoding: Binary'
-                    encoding = 'binary'
-            elif tmp[0] == 'N,':
-                if debug:
-                    print 'Volume of data: ' + tmp[1] + ' points'
-                x_num = int(tmp[1])
-            elif tmp[0] == 'XINCR':
-                if debug:
-                    print 'Time between points: ' + tmp[1]
-                x_incr = float(tmp[1])
-            elif tmp[0] == 'XUNIT':
-                if debug:
-                    if tmp[1] == '"s"':
-                        print 'X axis unit: Seconds'
-                    elif tmp[1] == '"Hz"':
-                        print 'X axis unit: Hertz'
-            elif tmp[0] == 'XZERO':
-                if debug:
-                    print 'Trigger occurred at ' + tmp[1] + ' V from 1st data point'
-            elif tmp[0] == 'YMULT':
-                if debug:
-                    print 'Y axis muitiplyer: ' + tmp[1]
-                y_mult = float(tmp[1])
-            elif tmp[0] == 'YZERO':
-                if debug:
-                    print 'Y axis zero: ' + tmp[1]
-                y_zero = float(tmp[1])
-            elif tmp[0] == 'YOFF':
-                try:
-                    y_offset = float(tmp[1])
-                    if debug:
-                        print 'Y axis waveform offset: ' + tmp[1]
-                except ValueError:
-                    y_offset = 0.00
-                    if debug:
-                        print 'Y axis waveform offset ignored'
+        encoding = out[2]
+        channelStats = out[6]
+        parts = channelStats.split(', ')
+        # x_incr = float(parts[3].replace(' s/div',''))
+        x_incr = float(out[8])
+        x_num = int(parts[4].replace(' points',''))
+        y_mult = float(out[12])
+        y_zero = float(out[13])
+        y_offset = float(out[14])
 
         if y_offset == False:
             print
@@ -678,8 +727,8 @@ class channel(tek2024):
         while tmp == False:
             tmp = self.read()
 
-        if encoding == 'binary':
-            tmp = tmp.split(':CURVE #42500')[1]
+        if encoding == 'BIN':
+            tmp = tmp.split('#42500')[1]
             data = np.array(unpack('>%sB' % (len(tmp)), tmp))
         elif encoding == 'ascii':
             out = tmp.split(":CURVE ")[1]
@@ -691,6 +740,7 @@ class channel(tek2024):
         self.curve_raw = data
         data_y = map(lambda x: ((int(x) - y_offset) * y_mult) + y_zero, data)
         data_x = map(lambda x: x * x_incr , range(len(data_y)))
+
         if x_num != False and x_num != len(data_y):
             print
             print "======================================================"
@@ -712,6 +762,3 @@ class channel(tek2024):
             print
 
         return [data_x, data_y]
-
-
-
