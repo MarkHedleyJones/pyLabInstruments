@@ -2,15 +2,16 @@ pyInstruments
 =============
 
 A simple library for controlling USB and Serial based measurement instruments in Linux. It does not have a gui but provides a wrapper around instruments controlled via usb or serial interface.
-It does not rely on the VISA library. No docmunetation exists as yet.
+It does not rely on Agilent/NI VISA libraries.
+No docmunetation exists as yet.
 
 ## Supported instruments
 
 ###usb_instruments:
-* Agilent 3320A Arbitrary Waveform Generator
+* Agilent 3320A Arbitrary Waveform Generator (view [usage example](http://markjones112358.co.nz/projects/Python-Controlled-Function-Generator/))
 
 ###serial_instruments:
-* Tektronix TPS2024B Digital Storage Oscilloscope
+* Tektronix TPS2024B Digital Storage Oscilloscope (view [usage example](http://markjones112358.co.nz/projects/Python-Controlled-Oscilloscope/))
 
 
 ## Usage
