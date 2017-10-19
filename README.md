@@ -1,4 +1,4 @@
-pyInstruments
+pyLabInstruments
 =============
 
 A simple library for controlling USB and Serial based measurement instruments in Linux. It does not have a gui but provides a wrapper around instruments controlled via usb or serial interface.
