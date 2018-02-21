@@ -7,10 +7,10 @@ No docmunetation exists as yet.
 
 ## Supported instruments
 
-###usb_instruments:
+### usb_instruments:
 * Agilent 3320A Arbitrary Waveform Generator (view [usage example](http://markjones112358.co.nz/projects/Python-Controlled-Function-Generator/))
 
-###serial_instruments:
+### serial_instruments:
 * Tektronix TPS2024B Digital Storage Oscilloscope (view [usage example](http://markjones112358.co.nz/projects/Python-Controlled-Oscilloscope/))
 
 
